@@ -2,7 +2,14 @@
 
 This repo holds a copy of the Playwright / Cursor agent standards from [`feat/standards-kit`](https://github.com/JoanEsquivel/playwright-for-ui-interview-baseline/tree/feat/standards-kit) in **`cursor-standards/`**.
 
-Nothing was installed. There is no `node_modules`, no lockfile, and no Playwright app checkout. Use the kit as-is (rules, skills, `AGENTS.md`, Cursor/Claude/Copilot agent files) when starting a new project.
+`@playwright/cli` (and `@playwright/test`) are installed at the repo root so you can run `pnpm exec playwright-cli`. The SauceDemo Playwright app was not copied.
+
+```bash
+corepack enable
+corepack pnpm install
+corepack pnpm exec playwright install chromium --with-deps
+pnpm exec playwright-cli open https://example.com
+```
 
 ## Layout
 
