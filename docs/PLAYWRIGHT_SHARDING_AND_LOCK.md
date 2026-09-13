@@ -67,8 +67,13 @@ pnpm demo:locks
 
 The two `WITHOUT lock` tests contend for an atomic directory representing a
 shared account. One can log a `collision`. The two `WITH lock` tests use
-`{ lock: 'shared-account' }`; both acquire it, one after the other. Unrelated
-work still runs.
+`{ lock: 'shared-account' }`; both acquire their equivalent protected probe,
+one after the other. The probes have separate filesystem names so both cases
+can run concurrently without contaminating the comparison.
+
+Every participant touching a resource must declare the same lock. A test that
+omits it is invisible to Playwright's lock scheduler and can still collide
+with protected tests.
 
 ```bash
 pnpm demo:cross-shard
@@ -88,7 +93,9 @@ pnpm test:shard:2
 
 Run those in two terminals. Compare `[demo]` records or
 `demo-output/timeline.jsonl`. `worker` and `parallelIndex` belong to each
-invocation; they are not globally unique across CI machines.
+invocation; they are not globally unique across CI machines. These two commands
+teach suite distribution only; use `demo:cross-shard` for the lock-boundary
+lesson because shard allocation is intentionally controlled there.
 
 ## Authentication architecture
 

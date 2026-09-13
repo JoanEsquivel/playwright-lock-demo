@@ -10,6 +10,8 @@ test('reuses storageState without logging in again', async ({ page }) => {
 test('authenticated customer can open the wishlist', async ({ page }) => {
   await page.goto('shop/wishlist');
 
-  await expect(page.getByRole('heading', { name: 'Wishlist' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Wishlist', exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Casey Customer' })).toBeVisible();
 });

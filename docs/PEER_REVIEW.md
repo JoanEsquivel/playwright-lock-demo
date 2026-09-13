@@ -6,7 +6,7 @@ Use this checklist when teaching or reviewing the proof of concept.
 
 - [ ] `pnpm typecheck` passes on Playwright 1.63.
 - [ ] `pnpm demo:locks` shows an unprotected collision and no protected collision.
-- [ ] Protected tests execute on different workers but do not overlap.
+- [ ] Protected tests do not overlap, regardless of which workers receive them.
 - [ ] Unrelated tests continue while a named lock is held.
 - [ ] `pnpm demo:cross-shard` demonstrates that independent runners do not share locks.
 - [ ] `pnpm test:shard:1` and `pnpm test:shard:2` collect complementary tests.
