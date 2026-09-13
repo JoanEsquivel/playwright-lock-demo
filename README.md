@@ -380,6 +380,17 @@ jobs:
         with: { name: playwright-report-with-locks, path: playwright-report/ }
 ```
 
+Real run from this repo (pull request #1, run
+[34789444329](https://github.com/JoanEsquivel/playwright-lock-demo/actions/runs/34789444329)):
+
+| Job | Result | Playwright output |
+|---|---|---|
+| Without locks (expected to fail) | green job, red step | `5 failed, 8 passed (33.0s)` — three different symptoms: `Received: "Alex Admin"`, `Received: visible` (Admin link), `Received: "admin"` (profile role) |
+| With locks (must be green) | green | `15 passed (30.0s)` |
+
+The CI runner collided more often than a laptop does (5 of 9 readers instead of 1): slower
+machines widen the window in which the writer holds the file.
+
 How to read a run:
 
 - **Without locks** is green as a job but its *step* is red. Open the job summary: it says whether
