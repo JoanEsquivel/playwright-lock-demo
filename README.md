@@ -1,26 +1,50 @@
-# Cursor standards kit
+# Playwright Sharding + Test Locks Demo
 
-This repo holds a copy of the Playwright / Cursor agent standards from [`feat/standards-kit`](https://github.com/JoanEsquivel/playwright-for-ui-interview-baseline/tree/feat/standards-kit) in **`cursor-standards/`**.
+An educational Playwright + TypeScript project showing how tests are divided
+between workers and shards, how Playwright 1.63 **Test locks** serialize access
+inside one run, why locks do not coordinate independent CI jobs, and how an
+authentication setup project produces reusable `storageState`.
 
-`@playwright/cli` (and `@playwright/test`) are installed at the repo root so you can run `pnpm exec playwright-cli`. The SauceDemo Playwright app was not copied.
+Application under test:
+<https://joanesquivel.github.io/the-test-automation-website/>
+
+## Install
 
 ```bash
 corepack enable
 corepack pnpm install
 corepack pnpm exec playwright install chromium --with-deps
-pnpm exec playwright-cli open https://example.com
 ```
 
-## Layout
+## Guided runs
 
-| Path | What it is |
-|---|---|
-| `cursor-standards/.cursor/rules/` | Cursor rules (`.mdc`) |
-| `cursor-standards/.claude/` | Skills, rules, agent, settings, memory |
-| `cursor-standards/AGENTS.md` | Agent contract |
-| `cursor-standards/CLAUDE.md` | Claude Code pointer |
-| `cursor-standards/.github/` | Copilot agent/instructions + CI templates |
-| `cursor-standards/docs/` | Agent guide, decisions, kit design notes |
-| `cursor-standards/scripts/` | `sync-agent-config.mjs` and lint hook |
+```bash
+pnpm test:serial        # one worker
+pnpm test:parallel      # four worker processes
+pnpm demo:locks         # compare collisions without locks vs serialization
+pnpm test:shard:1       # shard 1 of 2 (run both shard commands concurrently)
+pnpm test:shard:2       # shard 2 of 2
+pnpm demo:cross-shard   # proves locks do not cross Playwright invocations
+```
 
-To use these with Cursor in another repo, copy the contents of `cursor-standards/` to that project root (especially `.cursor/`, `.claude/`, and `AGENTS.md`).
+Every demo prints JSON records containing timestamp, PID, worker index,
+parallel index, and shard. The same records are saved to
+`demo-output/timeline.jsonl`.
+
+Read [`docs/PLAYWRIGHT_SHARDING_AND_LOCK.md`](docs/PLAYWRIGHT_SHARDING_AND_LOCK.md)
+before presenting the demo. Review notes are in
+[`docs/PEER_REVIEW.md`](docs/PEER_REVIEW.md).
+
+## Architecture
+
+```text
+docs/                 teaching guide and review checklist
+playwright/.auth/      generated customer storageState (gitignored)
+tests/auth/            setup project and authenticated examples
+tests/parallel/        safe, independent browser work
+tests/locking/         protected and deliberately unprotected resources
+tests/sharding/        evenly distributable examples
+utils/                 JSON timeline and exclusive-resource probe
+scripts/               cleanup and cross-shard demonstration
+cursor-standards/      copied agent standards kit
+```
