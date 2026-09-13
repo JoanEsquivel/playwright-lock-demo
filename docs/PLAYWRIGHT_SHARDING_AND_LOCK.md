@@ -100,9 +100,9 @@ lesson because shard allocation is intentionally controlled there.
 ## Authentication architecture
 
 `auth-setup` logs in once as the public seeded customer and writes
-`playwright/.auth/customer.json`. The `chromium` project depends on setup and
-loads that state into each isolated browser context. This avoids repeated UI
-login while preserving per-test context isolation.
+`.auth/user.json`. The `ui` and `e2e` projects depend on `setup` and load that
+state into each isolated browser context. This avoids repeated UI login while
+preserving per-test context isolation.
 
 The hosted application stores its simulated backend and token in browser
 `localStorage`; storage state captures that origin-scoped state. Therefore,
@@ -114,6 +114,34 @@ tenant, payment sandbox, device, or mutable backend record.
 The seeded credentials are intentionally published by the training site:
 `customer@example.com` / `Password123!`. Do not copy this pattern for real
 credentials; use CI secrets and never commit generated auth state.
+
+## Standards used in this project
+
+The first proof of concept demonstrated the Playwright behavior but left the
+copied standards under `cursor-standards/`, where Cursor could not apply them,
+and specs used raw `page.goto()` and direct `@playwright/test` imports. The
+project was rebuilt from the kit's `playwright-scaffold` skill.
+
+The active implementation now follows the root `AGENTS.md` contract:
+
+- `.cursor/`, `.claude/`, `AGENTS.md`, and Copilot instructions are at the
+  repository root;
+- base URL and credentials are read only through `utils/env.ts` and `.env`;
+- page objects own navigation, load guards, actions, and described semantic
+  locators;
+- every page object is wired through `fixtures/page.fixtures.ts`;
+- specs import only from `fixtures/index.fixtures`, contain the assertions,
+  and carry `@ui` or `@e2e` tags;
+- setup/authentication lives under `tests/setup`, UI examples under
+  `tests/ui`, and cross-page/shared-resource examples under `tests/e2e`;
+- `pnpm lint` enforces architecture and TypeScript correctness.
+
+The delays in `utils/observation.ts` and filesystem probe in
+`utils/exclusive-resource.ts` are teaching instrumentation, not application
+page synchronization. Production UI tests should use web-first assertions,
+not arbitrary delays. The probes deliberately live outside specs so the specs
+remain declarative and their timing can be removed without changing the page
+objects.
 
 ## Choosing the right tool
 

@@ -27,6 +27,9 @@ pnpm test:shard:2       # shard 2 of 2
 pnpm demo:cross-shard   # proves locks do not cross Playwright invocations
 ```
 
+Copy `.env.example` to `.env` first. The hosted training site's public customer
+credentials are documented on its login page; `.env` remains gitignored.
+
 Every demo prints JSON records containing timestamp, PID, worker index,
 parallel index, and shard. The same records are saved to
 `demo-output/timeline.jsonl`.
@@ -39,12 +42,26 @@ before presenting the demo. Review notes are in
 
 ```text
 docs/                 teaching guide and review checklist
-playwright/.auth/      generated customer storageState (gitignored)
-tests/auth/            setup project and authenticated examples
-tests/parallel/        safe, independent browser work
-tests/locking/         protected and deliberately unprotected resources
-tests/sharding/        evenly distributable examples
-utils/                 JSON timeline and exclusive-resource probe
+pages/                semantic locators, load/waitLoad, actions only
+fixtures/             the only test/expect import point for specs
+.auth/                generated customer storageState (gitignored)
+tests/setup/          authentication setup project
+tests/ui/             independent UI and sharding examples
+tests/e2e/            authenticated and locking examples
+utils/                env, flows, JSON timeline, exclusive-resource probe
 scripts/               cleanup and cross-shard demonstration
-cursor-standards/      copied agent standards kit
+.cursor/ + .claude/   active rules, skills, and QA agent
+AGENTS.md             active project contract
+cursor-standards/     original copied kit for reference
 ```
+
+## Standards compliance
+
+This project was rebuilt from the copied `playwright-scaffold` skill after an
+initial proof of concept did not activate or follow the kit. The rebuilt
+version keeps runtime values in `.env`, puts navigation in page objects,
+describes every locator, wires pages through fixtures, imports specs only from
+`fixtures/index.fixtures`, tags tests, and gates completion with `pnpm lint`.
+
+See the “Standards used in this project” section in the teaching guide for the
+reasoning and trade-offs specific to the artificial timing/resource probes.
