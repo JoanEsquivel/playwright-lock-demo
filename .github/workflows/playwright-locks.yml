@@ -1,0 +1,73 @@
+name: Playwright (test locks demo)
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+env:
+  CI: true
+  BASE_URL: ${{ vars.BASE_URL || 'https://joanesquivel.github.io/the-test-automation-website/' }}
+  E2E_USERNAME: ${{ secrets.E2E_USERNAME }}
+  E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+  E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+  E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+jobs:
+  without-locks:
+    name: Without locks (expected to fail)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-playwright
+      # The copies in tests/demo/race have no `lock`. With 4 workers a customer test
+      # loads the shared session while the admin test is holding it, and fails.
+      # That failure IS the lesson, so the step is allowed to fail and the job stays green.
+      - name: Run the session specs WITHOUT locks (4 workers, no retries, repeat-each 3)
+        id: race
+        continue-on-error: true
+        run: pnpm demo:race
+      - name: Write the outcome to the job summary
+        if: ${{ !cancelled() }}
+        env:
+          RACE_OUTCOME: ${{ steps.race.outcome }}
+        run: |
+          {
+            echo "## Without locks"
+            if [ "$RACE_OUTCOME" = "failure" ]; then
+              echo "Race reproduced: a customer test loaded \`.auth/user.json\` while the admin test held it."
+            else
+              echo "No collision this time (the race is timing-dependent). Re-run the workflow or raise repeatEach."
+            fi
+            echo
+            echo "Open the \`playwright-report-without-locks\` artifact for the failing test, screenshot and trace."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Merge blob report to HTML
+        if: ${{ !cancelled() }}
+        run: pnpm exec playwright merge-reports --reporter html ./blob-report
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-without-locks
+          path: playwright-report/
+          retention-days: 14
+
+  with-locks:
+    name: With locks (must be green)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-playwright
+      # Same session specs, this time with `lock: 'shared-session'`. Stressed on purpose:
+      # 4 workers, every test twice, and no retries so a broken lock cannot hide behind a retry.
+      - name: Run the whole suite WITH locks (4 workers, repeat-each 2, no retries)
+        run: pnpm demo:locks
+      - name: Merge blob report to HTML
+        if: ${{ !cancelled() }}
+        run: pnpm exec playwright merge-reports --reporter html ./blob-report
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-with-locks
+          path: playwright-report/
+          retention-days: 14
