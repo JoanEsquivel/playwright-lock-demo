@@ -2,7 +2,7 @@ import { test, type Locator, type Page } from '@playwright/test';
 
 export class HomePage {
   readonly page: Page;
-  readonly url = '/';
+  readonly url = './';
   readonly heading: Locator;
   readonly customerProfileLink: Locator;
   readonly logoutButton: Locator;

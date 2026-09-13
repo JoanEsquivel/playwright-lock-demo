@@ -8,7 +8,7 @@ const ACTION_LAYERS = ['pages/**/*.ts', 'api/**/*.ts'];
 
 export default defineConfig([
   {
-    ignores: ['node_modules/**', 'test-results/**', 'playwright-report/**', 'blob-report/**', '.playwright-cli/**', '.auth/**', '.claude/**'],
+    ignores: ['node_modules/**', 'test-results/**', 'playwright-report/**', 'blob-report/**', '.playwright-cli/**', '.auth/**', '.claude/**', 'cursor-standards/**'],
   },
   ...tseslint.configs.recommendedTypeChecked,
   {

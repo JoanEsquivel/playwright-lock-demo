@@ -19,7 +19,7 @@
     "test:locking": "node scripts/clean-demo-output.mjs && playwright test tests/e2e/locking --project=e2e",
     "test:shard:1": "playwright test --shard=1/2",
     "test:shard:2": "playwright test --shard=2/2",
-    "demo:locks": "node scripts/clean-demo-output.mjs && playwright test tests/locking --workers=4",
+    "demo:locks": "node scripts/clean-demo-output.mjs && playwright test tests/e2e/locking --project=e2e --workers=4",
     "demo:cross-shard": "node scripts/cross-shard-lock-demo.mjs",
     "demo:clean": "node scripts/clean-demo-output.mjs",
     "typecheck": "tsc --noEmit",
