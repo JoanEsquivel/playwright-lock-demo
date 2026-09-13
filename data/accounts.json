@@ -1,0 +1,4 @@
+{
+  "customer": { "displayName": "Casey Customer", "role": "customer" },
+  "admin": { "displayName": "Alex Admin", "role": "admin" }
+}
