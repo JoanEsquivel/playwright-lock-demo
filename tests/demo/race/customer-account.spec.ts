@@ -1,4 +1,5 @@
-// DEMO COPY of tests/e2e/session/customer-account.spec.ts WITHOUT the lock.
+// DEMO COPY of tests/e2e/session/customer-account.spec.ts WITHOUT the lock. Everything else,
+// including the comment block below that talks about the lock, is copied verbatim so you can diff the two files.
 // Only `pnpm demo:race` (playwright.race.config.ts) runs this folder. Expected to FAIL when a writer overlaps.
 import { test, expect } from '../../../fixtures/index.fixtures';
 import { env } from '../../../utils/env';

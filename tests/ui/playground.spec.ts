@@ -1,10 +1,13 @@
 import { test, expect } from '../../fixtures/index.fixtures';
 
 /**
- * Independent public pages. They do not care who is signed in, so they declare
- * NO lock: while the session tests take turns, these keep running in parallel.
+ * Independent public pages. They do not care who is signed in, so they start
+ * logged out (they never read the shared session file) and declare NO lock:
+ * while the session tests take turns, these keep running in parallel.
  */
 test.describe('Public pages', { tag: ['@ui'] }, () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test('should show the playground categories', { tag: ['@smoke'] }, async ({ playgroundPage }) => {
     await test.step('Load Playground page', async () => {
       await playgroundPage.load();

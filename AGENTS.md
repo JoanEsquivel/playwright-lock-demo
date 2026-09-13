@@ -31,7 +31,7 @@ pnpm exec playwright-cli open <url>       # live browser: snapshot, click, fill,
 ```
 pages/       Page objects: locators (.describe()), load(), waitLoad(), actions. No assertions.
 utils/       e2e (multi-page flows, bridge guard) · env (typed env access)
-fixtures/    page · e2e · api → index.fixtures (mergeTests + toMatchSchema); only spec import
+fixtures/    page · e2e · timeline → index.fixtures (mergeTests + toMatchSchema); only spec import. No API layer in this repo (scaffolded with --no-api)
 tests/       setup/ · ui/ · e2e/ · demo/race/ (lock-free copies, only reachable through playwright.race.config.ts)
 data/        *.json test data (never credentials)
 .github/     workflows: lint, playwright-parallel, playwright-locks · actions/setup-playwright
@@ -54,6 +54,7 @@ data/        *.json test data (never credentials)
 
 - Page-object `url`s have **no leading slash** (`'account/login'`, `'./'`) because `BASE_URL` carries the GitHub Pages sub-path; a leading slash would escape it.
 - `tests/demo/race/` sits outside the standard folders on purpose: it holds byte-identical copies of the session specs without `lock`, so the tutorial can show the failure. No project in `playwright.config.ts` points at it.
+- The session specs share ONE storage-state file on purpose, against the kit's "one `.auth/<role>.json` per role" decision table: the shared file is the resource the locks demo is about. Do not split it per role without rewriting the tutorial.
 - The `timeline` auto fixture prints start/end lines per test; it is a teaching aid for the locks demo, not a reporting layer.
 
 ## Choosing a test style

@@ -2,7 +2,7 @@
 
 A hands-on tutorial for people who are new to Playwright. You will build (well, run) a small test
 framework against a real website, watch two tests corrupt each other when they run in parallel, and
-fix it with one line: the **`lock`** option that shipped in **Playwright 1.63 (September 2026)**.
+fix it with one option: the **`lock`** setting that shipped in **Playwright 1.63 (September 2026)**.
 
 Everything here is real: the site is live, the failures below were captured from actual runs, and the
 GitHub Actions workflow in this repo runs both the broken and the fixed version on every push.
@@ -43,11 +43,15 @@ test('update user settings', { lock: 'user-settings' }, async ({ page }) => {
 });
 ```
 
-From the docs:
+From the [1.63.0 release notes](https://github.com/microsoft/playwright/releases/tag/v1.63.0):
 
 > Tests that share a lock name never run concurrently, across files, workers and projects, while
-> everything else keeps running in parallel. Playwright acquires all the locks of a test before the
-> test starts and releases them when it finishes.
+> everything else keeps running in parallel.
+
+And from the [docs](https://playwright.dev/docs/test-parallel#test-locks):
+
+> Playwright acquires all the locks of a test before the test starts and releases them when it
+> finishes.
 
 Three things to remember:
 
@@ -157,8 +161,8 @@ corepack pnpm test     # setup → ui + e2e; should be green (this is the WITH-l
 
 ## 5. Step 1 — Watch it break (no locks)
 
-`tests/demo/race/` contains **byte-identical copies** of the two session specs with one difference:
-the `lock` option is removed. A second config, `playwright.race.config.ts`, runs only that folder
+`tests/demo/race/` contains **copies** of the two session specs. Apart from a header comment, the
+only difference is that the `lock` option is removed. A second config, `playwright.race.config.ts`, runs only that folder
 with 4 workers, no retries, and every test repeated three times so the overlap is easy to hit.
 
 ```bash
@@ -228,8 +232,8 @@ The fix is the difference between `tests/demo/race/` and `tests/e2e/session/`:
 ```
 
 Both groups now hold the lock named `shared-session`. Nothing else changed. Run the normal suite,
-which also contains three public-page tests in `tests/ui/playground.spec.ts` that declare **no**
-lock:
+which also contains three public-page tests in `tests/ui/playground.spec.ts`. Those start logged
+out, so they never read the session file, and they declare **no** lock:
 
 ```bash
 corepack pnpm test --workers=4
@@ -260,9 +264,11 @@ What to notice:
 
 - The three public tests ran **in parallel** with the writer on workers 0, 1 and 2. Locks did not
   slow them down at all.
-- The first reader started at `56.756`, six milliseconds after the writer released the lock at
-  `56.750`. The readers then ran one at a time (they share the lock with each other too).
-- Total time is the same as the broken run. You paid nothing for the safety.
+- The first reader started at `56.756`, six milliseconds after the writer finished at `56.750`
+  (the lock is released once the writer's teardown is done). The readers then ran one at a time:
+  they share the lock with each other too.
+- The safety cost nothing measurable: in CI the locked stress run and the broken run both take
+  about 30 seconds (see section 10).
 
 To stress it the way CI does (4 workers, every test twice, retries off so nothing can hide):
 
@@ -299,13 +305,16 @@ but not tests holding `c`.
 
 **Everyone must opt in.** A lock protects nothing on its own. It is an agreement between tests: a
 test that touches the shared file *without* declaring `lock: 'shared-session'` is invisible to the
-scheduler and will collide as before. That is why the group form is a good default for readers.
+scheduler and will collide as before. That is why the group form is a good default for readers,
+and why the public-page tests in this repo start logged out: a test that does not need the shared
+thing should not touch it at all.
 
 **File mode matters.** With the default `fullyParallel: false`, all tests in one file run in order on
 one worker as a single unit, and a lock declared by *any* test in the file is held for the *whole*
 file. This project sets `fullyParallel: true` in `playwright.config.ts`, so each test acquires and
-releases the lock individually. If you add `test.describe.configure({ mode: 'serial' })` or a
-`beforeAll` to a locked file, the file becomes one unit again.
+releases the lock individually. If you add `test.describe.configure({ mode: 'serial' })` to a
+locked file, the file becomes one unit again. A `beforeAll`/`afterAll` hook is in between: Playwright
+then runs the file's tests in a few chunks, and the lock is held for a whole chunk.
 
 **A lock is not an order.** Locks say "not at the same time", never "A before B". If test B needs
 what test A produced, that is a dependency, and the answer is a `setup` project or a fixture, not a
@@ -323,7 +332,9 @@ that reason. When you investigate flakiness, turn retries off first.
 **Leave it as you found it.** The lock guarantees exclusive access, not cleanup. The writer in this
 repo signs the customer back in and rewrites the file before it ends. If it crashed halfway, the
 file would stay "admin" and every later reader would fail even with the lock. Restore shared state
-at the end of the test (or in an `afterEach`) and let the `setup` project recreate it on the next run.
+at the end of the test **and** in an `afterEach`, which runs even when the test fails and still
+inside the lock. The writer in this repo copies the file in `beforeEach` and writes it back in
+`afterEach`. The `setup` project recreates it on the next run anyway.
 
 ## 9. When to use a lock (and when not to)
 
@@ -397,7 +408,8 @@ How to read a run:
   the race was reproduced. Download `playwright-report-without-locks` to see the failing test with
   its screenshot and trace. The race is timing-dependent, so once in a while a run will not collide;
   re-run it.
-- **With locks** must be green. If it ever goes red, a lock is missing somewhere.
+- **With locks** must be green. If it ever goes red, either a lock is missing somewhere or the
+  site itself was unreachable: check the failing test's trace before blaming the locks.
 
 Things you need in your own repo:
 

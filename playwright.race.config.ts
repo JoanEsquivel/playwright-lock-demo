@@ -23,7 +23,7 @@ export default defineConfig({
     {
       name: 'demo-race',
       testDir: './tests/demo/race',
-      // Project-level, so the setup project is NOT repeated.
+      // Kept at project level to make the intent explicit: only the race specs repeat.
       repeatEach: 3,
       use: { ...devices['Desktop Chrome'], storageState: STORAGE_STATE },
       dependencies: ['setup'],

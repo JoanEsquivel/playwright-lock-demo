@@ -61,7 +61,9 @@ Short records of the choices behind this framework and kit. Newest last.
 
 The demo target (GitHub Pages build of TAW) keeps all state in `localStorage`, so nothing on the site is shared between workers. The shared resource for the `lock` demo is therefore the suite's single session file `.auth/user.json`: the setup project writes it as the customer, `tests/e2e/session/customer-account.spec.ts` reads it, and `tests/e2e/session/admin-area.spec.ts` overwrites it with the admin session and restores it. Both groups declare `lock: 'shared-session'`.
 
-Two exceptions to the kit templates are accepted for this repo:
+Three exceptions to the kit templates are accepted for this repo:
+
+- The kit's decision table prescribes one storage-state file per role. The demo deliberately shares one file between the customer readers and the admin writer, because that shared file is the resource under study. Splitting it per role would remove the race and the demo with it.
 
 - Page-object `url`s have no leading slash (`'account/login'`, `'./'`) because `BASE_URL` includes the Pages sub-path; a leading slash escapes it.
 - `tests/demo/race/` holds byte-identical copies of the session specs without `lock`, run only by `playwright.race.config.ts` (`pnpm demo:race`, expected to fail). No project in `playwright.config.ts` points at it, so `pnpm test` never runs the copies, while ESLint and `tsc` still cover them.

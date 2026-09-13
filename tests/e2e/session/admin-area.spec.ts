@@ -1,3 +1,4 @@
+import { readFile, writeFile } from 'node:fs/promises';
 import { test, expect } from '../../../fixtures/index.fixtures';
 import { STORAGE_STATE } from '../../../playwright.config';
 import accounts from '../../../data/accounts.json';
@@ -11,10 +12,25 @@ import accounts from '../../../data/accounts.json';
  * While it holds the file, any "session reader" that starts would load the
  * ADMIN session and fail. `lock: 'shared-session'` prevents that: readers and
  * this writer never overlap, while every other test keeps running in parallel.
+ *
+ * A lock gives exclusive access, not cleanup: if this test crashed halfway the
+ * file would stay "admin" for the rest of the run. The hooks below keep a copy
+ * of the customer session and always put it back, pass or fail.
  */
 test.describe('Admin area', { tag: ['@e2e'], lock: 'shared-session' }, () => {
   // Start logged out: this test creates its own sessions.
   test.use({ storageState: { cookies: [], origins: [] } });
+
+  let customerSession: Buffer;
+
+  test.beforeEach(async () => {
+    customerSession = await readFile(STORAGE_STATE);
+  });
+
+  test.afterEach(async () => {
+    // Runs before the lock is released, so no reader can see a half-restored file.
+    await writeFile(STORAGE_STATE, customerSession);
+  });
 
   test(
     'should take over the shared session as admin and hand it back to the customer',
