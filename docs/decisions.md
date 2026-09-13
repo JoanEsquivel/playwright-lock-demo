@@ -66,7 +66,7 @@ Three exceptions to the kit templates are accepted for this repo:
 - The kit's decision table prescribes one storage-state file per role. The demo deliberately shares one file between the customer readers and the admin writer, because that shared file is the resource under study. Splitting it per role would remove the race and the demo with it.
 
 - Page-object `url`s have no leading slash (`'account/login'`, `'./'`) because `BASE_URL` includes the Pages sub-path; a leading slash escapes it.
-- `tests/demo/race/` holds byte-identical copies of the session specs without `lock`, run only by `playwright.race.config.ts` (`pnpm demo:race`, expected to fail). No project in `playwright.config.ts` points at it, so `pnpm test` never runs the copies, while ESLint and `tsc` still cover them.
+- `tests/demo/race/` holds copies of the session specs that differ only by a header comment and the missing `lock` option, run only by `playwright.race.config.ts` (`pnpm demo:race`, expected to fail). No project in `playwright.config.ts` points at it, so `pnpm test` never runs the copies, while ESLint and `tsc` still cover them.
 
 ## Appendix — tool compatibility matrix
 

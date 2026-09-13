@@ -47,13 +47,13 @@ data/        *.json test data (never credentials)
 6. No `page.goto()` in specs; use `<page>.load()` + `waitLoad()`. (lint)
 7. No credentials in code or data files; use `env.*`. (lint)
 8. Isolated, deterministic tests: no `waitForTimeout`, no `if` in tests, web-first assertions, tags on every test. (lint)
-9. Every page object gets a fixture entry; every client is wired in the api fixture. Orphans are removed on delete.
+9. Every page object gets a fixture entry; Orphans are removed on delete.
 10. Done = `lint` clean and the targeted `playwright test` run green. Never weaken an assertion; file a bug report instead.
 
 ## Documented exceptions
 
 - Page-object `url`s have **no leading slash** (`'account/login'`, `'./'`) because `BASE_URL` carries the GitHub Pages sub-path; a leading slash would escape it.
-- `tests/demo/race/` sits outside the standard folders on purpose: it holds byte-identical copies of the session specs without `lock`, so the tutorial can show the failure. No project in `playwright.config.ts` points at it.
+- `tests/demo/race/` sits outside the standard folders on purpose: it holds copies of the session specs that differ only by a header comment and the missing `lock` option, so the tutorial can show the failure. No project in `playwright.config.ts` points at it.
 - The session specs share ONE storage-state file on purpose, against the kit's "one `.auth/<role>.json` per role" decision table: the shared file is the resource the locks demo is about. Do not split it per role without rewriting the tutorial.
 - The `timeline` auto fixture prints start/end lines per test; it is a teaching aid for the locks demo, not a reporting layer.
 

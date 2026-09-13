@@ -458,7 +458,7 @@ Rules that matter for this tutorial:
   site's sub-path. `page.goto('/account/login')` would escape it. This is a documented exception to
   the kit's `url = '/route'` template.
 - **`tests/demo/race` is a documented exception** to the "four test folders" rule: the copies exist
-  so you can diff them against the real specs and see that the lock is the only change.
+  so you can diff them against the real specs and see that the lock option (plus a header comment) is the only change.
 
 Useful commands:
 
