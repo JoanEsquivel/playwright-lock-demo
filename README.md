@@ -152,6 +152,80 @@ Two kinds of tests touch that file:
 If a reader starts while the writer holds the file, the reader loads the **admin** session and its
 assertions fail: the header says *Alex Admin*, the Admin link is visible.
 
+### Why a worker fails: the race, step by step
+
+Each worker has its own browser and its own context, so nothing *in the browser* is shared. The one
+thing they all share is a file on disk, and there is exactly one copy of it. Without a lock, two
+workers can pick up the writer and a reader at the same moment:
+
+```mermaid
+sequenceDiagram
+    participant S as setup project
+    participant F as .auth/user.json
+    participant W2 as worker 2<br/>admin-area (writer)
+    participant W3 as worker 3<br/>customer-account (reader)
+
+    S->>F: sign in as Casey Customer, save the session
+    Note over F: customer
+
+    par worker 2 and worker 3 start at the same time
+        W2->>W2: start logged out, sign in as Alex Admin
+        W2->>F: overwrite with the admin session
+        Note over F: admin
+        W2->>W2: check the admin dashboard and profile
+    and
+        W3->>F: load the session file
+        F-->>W3: admin session
+        W3->>W3: open the home page
+        Note over W3: expects "Casey Customer"<br/>sees "Alex Admin" ✘ test fails
+    end
+
+    W2->>W2: log out, sign in as Casey Customer
+    W2->>F: write the customer session back
+    Note over F: customer
+```
+
+The reader did nothing wrong and the application did nothing wrong. It simply read the file during
+the few seconds the writer had replaced its contents. Whether that happens depends on which worker
+picks which test and when, so the failure is random: it may pass three times and fail the fourth.
+A retry usually hides it, which is why the demo runs with `retries: 0`.
+
+With `lock: 'shared-session'` on both specs, Playwright makes sure only one of them runs at a time.
+The reader waits until the writer has put the file back:
+
+```mermaid
+sequenceDiagram
+    participant S as setup project
+    participant F as .auth/user.json
+    participant W2 as worker 2<br/>admin-area (writer)
+    participant W3 as worker 3<br/>customer-account (reader)
+
+    S->>F: sign in as Casey Customer, save the session
+    Note over F: customer
+    Note over W2,W3: both specs declare lock: 'shared-session'
+
+    W2->>W2: takes the lock
+    Note over W3: waits for the lock<br/>(other workers keep running lock-free tests)
+    W2->>W2: sign in as Alex Admin
+    W2->>F: overwrite with the admin session
+    Note over F: admin
+    W2->>W2: check the admin dashboard and profile
+    W2->>F: write the customer session back
+    Note over F: customer
+    W2->>W2: releases the lock
+
+    W3->>W3: takes the lock
+    W3->>F: load the session file
+    F-->>W3: customer session
+    W3->>W3: open the home page
+    Note over W3: "Casey Customer", Admin link hidden ✓
+    W3->>W3: releases the lock
+```
+
+Only the tests that name the lock wait for each other. The public-page tests in `tests/ui` do not
+declare it, so they keep filling the other workers while the session tests take turns. That is the
+difference between a lock and `workers: 1`: you pay the serialisation only where the sharing is.
+
 ### An honest note about this site
 
 The deployed site runs "in-browser mode": its API is a service worker and its data lives in
