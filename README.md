@@ -10,6 +10,46 @@ GitHub Actions workflow in this repo runs both the broken and the fixed version 
 **Target site:** <https://joanesquivel.github.io/the-test-automation-website/> (TAW), a practice app
 with a store, a login, a customer role and an admin role.
 
+> ### ⚠️ Read this first: this demo shares state on purpose. Do not copy that part.
+>
+> Good practice for parallel tests is **no shared mutable state**. Every test should own what it
+> touches: its own user, its own record, its own file. For authentication that means **one storage
+> state file per role** (`.auth/customer.json`, `.auth/admin.json`), each written once by the setup
+> project and only ever *read* afterwards. A test that needs admin simply declares
+> `test.use({ storageState: ADMIN_STATE })`. No test writes a file another test reads, so nothing
+> has to be locked, restored or ordered, and you can add workers and roles without touching a line.
+>
+> This repo deliberately breaks that rule. The customer specs and the admin spec share **one** file,
+> `.auth/user.json`, and the admin spec overwrites it mid-run. Why? Because `lock` only makes sense
+> when there is a resource that *cannot* be split, and a tutorial needs a resource that is small
+> enough to read in one screen, fails visibly when two workers collide, and passes the moment the
+> lock is added. The shared session file is that teaching prop. In a real suite it would be split
+> per role, and you would reach for `lock` only for things that truly cannot be duplicated: a seeded
+> account, a global app setting, a third-party sandbox with one slot, a rate-limited API.
+>
+> **How the race is staged.** The `setup` project signs in as the customer once and writes the
+> session to `.auth/user.json`. Then two kinds of specs run in parallel on 4 workers:
+>
+> - **Readers** (`customer-account.spec.ts`) load that file and assert the header says the customer's
+>   name, the Admin link is hidden and the profile role is `customer`.
+> - **The writer** (`admin-area.spec.ts`) starts logged out, signs in as admin, **overwrites**
+>   `.auth/user.json` with the admin session, checks the admin dashboard, then signs back in as the
+>   customer and writes the file back. It holds the file for a few seconds.
+>
+> Without a lock (`pnpm demo:race`, which runs verbatim copies of both specs from `tests/demo/race`
+> with the `lock` option removed), any reader that starts inside that window loads the **admin**
+> session and fails: the header says the admin's name, the Admin link is visible. That config uses
+> 4 workers, no retries and repeats every test three times so the collision is easy to hit and
+> nothing hides it. With `lock: 'shared-session'` on both specs (`pnpm test`, `pnpm demo:locks`),
+> readers and the writer take turns while every other test keeps running in parallel, and the same
+> scenario is green.
+>
+> So when you read the rest of this tutorial, keep the two ideas apart:
+>
+> - **The mechanics of `lock`** (sections 1, 2, 6, 7, 8) are the pattern to take home.
+> - **The shared session file** (sections 3 and 5) is a manufactured conflict that exists only so
+>   the failure can be shown. Section 9 has the decision table you should actually follow.
+
 ---
 
 ## Table of contents
